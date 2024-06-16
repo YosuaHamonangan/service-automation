@@ -1,4 +1,3 @@
-import { ServiceMode } from "@/constants";
 import { ParsedPdfData, parsePdfData } from "@/utils/pdf";
 import { FileUploader } from "react-drag-drop-files";
 
@@ -10,7 +9,7 @@ interface Props {
 
 export function PdfInput(props: Props) {
   const handleChange = async (file: File) => {
-    const parsedData = await parsePdfData(file, ServiceMode.INDO);
+    const parsedData = await parsePdfData(file);
     props.onChange(parsedData);
   };
   return (

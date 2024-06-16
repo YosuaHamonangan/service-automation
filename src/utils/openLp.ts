@@ -1,30 +1,26 @@
 import JSZip from "jszip";
-import { ParsedPdfData } from "./pdf";
+import { ServiceData } from "./pdf";
 import { getSongData } from "./song";
+import { SERVICE_INFO } from "@/constants";
 
-export async function createServiceFile(serviceData: ParsedPdfData) {
+export async function createServiceFile(serviceData: ServiceData) {
   const serviceJSON = [
     ...createEmptyService(),
     await createSongItem(serviceData, 0),
-    createCustomItem("2", "Votum – Introitus – Doa"),
+    createCustomItem(serviceData, "votum"),
     await createSongItem(serviceData, 1),
-    createCustomItem(
-      "4",
-      "Hukum Taurat",
-      `Hukum Taurat : ${serviceData.patik}`
-    ),
+    createCustomItem(serviceData, "patik", "patik"),
     await createSongItem(serviceData, 2),
-    createCustomItem("6", "Pengakuan Dosa"),
+    createCustomItem(serviceData, "dosa"),
     await createSongItem(serviceData, 3),
-    createCustomItem("8", "Epistel", `Epistel : ${serviceData.epistel}`),
+    createCustomItem(serviceData, "epistel", "epistel"),
     await createSongItem(serviceData, 4),
-    createCustomItem("10", "Pengakuan Iman Rasuli"),
-    createCustomItem("11", "Koor"),
-    createCustomItem("12", "Warta Jemaat"),
+    createCustomItem(serviceData, "iman"),
+    createCustomItem(serviceData, "warta"),
     await createSongItem(serviceData, 5),
-    createCustomItem("15", "Khotbah", `Khotbah : ${serviceData.jamita}`),
+    createCustomItem(serviceData, "jamita", "jamita"),
     await createSongItem(serviceData, 6),
-    createCustomItem("17", "Doa Persembahan – Berkat"),
+    createCustomItem(serviceData, "doa"),
   ];
 
   const zip = new JSZip();
@@ -39,7 +35,7 @@ export async function createServiceFile(serviceData: ParsedPdfData) {
   link.click();
 }
 
-async function createSongItem(serviceData: ParsedPdfData, idx: number) {
+async function createSongItem(serviceData: ServiceData, idx: number) {
   const { songNum, verses, standVerse } = serviceData.songs[idx];
 
   const songData = await getSongData(songNum, serviceData.mode);
@@ -147,19 +143,23 @@ function createEmptySong() {
   };
 }
 
-function createCustomItem(tag: string, _title: string, _text?: string) {
+function createCustomItem(
+  serviceData: ServiceData,
+  staticKey: keyof (typeof SERVICE_INFO)["BE"]["static"],
+  dataKey?: Exclude<keyof ServiceData, "songs">
+) {
   const customJSON = createEmptyCustom();
 
-  const prefix = "IN";
-  const title = `${prefix} ${tag}-${_title}`;
-  const text = _text || _title;
+  const mode = serviceData.mode;
+  const title = SERVICE_INFO[mode].static[staticKey];
+  const text = dataKey ? `${title} : ${serviceData[dataKey]}` : title;
 
   customJSON.serviceitem.header.title = title;
   customJSON.serviceitem.header.footer = [title];
   customJSON.serviceitem.data.push({
     title: text,
     raw_slide: text,
-    verseTag: tag,
+    verseTag: staticKey,
   });
 
   return customJSON;

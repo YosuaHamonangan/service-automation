@@ -48,12 +48,12 @@ export async function getSongData(songNum: string, mode: ServiceMode) {
     xml: "",
   };
 
-  result.xml = await createSongXML(result);
+  result.xml = await createSongXML(result, true);
 
   return result;
 }
 
-async function createSongXML(songData: SongSlideData) {
+async function createSongXML(songData: SongSlideData, isAutomation = false) {
   const { titleNum, verseSlides, author, verseOrder } = songData;
 
   let lyrics = "";
@@ -67,7 +67,7 @@ async function createSongXML(songData: SongSlideData) {
 
   const xml = (await loadTemplate(TEMPLATE_KEY.SONG_XML))
     .replace("@{title}", titleNum)
-    .replace("@{author}", author)
+    .replace("@{author}", author + (isAutomation ? " - automate" : ""))
     .replace("@{verseOrder}", verseOrder.join(" "))
     .replace("@{lyrics}", lyrics);
 

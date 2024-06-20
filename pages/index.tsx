@@ -7,9 +7,14 @@ export default function Page() {
   const [pdfData, setPdfData] = useState<ParsedPdfData | null>(null);
   return (
     <>
-      <h1>Upload PDF Warta Jemaat</h1>;
-      <PdfInput onChange={setPdfData} />
-      {pdfData && <ServiceForm data={pdfData} />}
+      {!pdfData && <PdfInput onChange={setPdfData} />}
+      {pdfData && (
+        <ServiceForm
+          data={pdfData}
+          onChange={setPdfData}
+          onReset={() => setPdfData(null)}
+        />
+      )}
     </>
   );
 }

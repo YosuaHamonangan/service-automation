@@ -1,7 +1,7 @@
 import { SERVICE_INFO, ServiceMode } from "@/constants";
 import { createServiceFile } from "@/utils/openLp";
 import { ParsedPdfData, ServiceData, SongVerseData } from "@/utils/pdf";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, FormEvent, MouseEvent, useState } from "react";
 
 function ModeSelector(props: {
   value: ServiceMode;
@@ -52,23 +52,63 @@ function ModeSelector(props: {
   );
 }
 
-function SongInput(props: { order: number; data: ServiceData; idx: number }) {
+function SongInput(props: {
+  order: number;
+  data: ServiceData;
+  idx: number;
+  onChange: (data: ServiceData) => void;
+}) {
   const song = props.data.songs[props.idx];
+
+  function handleChange(val: Partial<SongVerseData>) {
+    const newData: ServiceData = {
+      ...props.data,
+      songs: [...props.data.songs],
+    };
+    newData.songs[props.idx] = { ...song, ...val };
+    props.onChange(newData);
+  }
+
   return (
     <div className="flex mb-1">
       <div className="w-1/12  p-2.5">{props.order}</div>
       <label className="w-1/12 p-2.5">{props.data.mode}</label>
       <input
-        className="w-4/12 p-2.5 border rounded-lg block"
+        className="w-5/12 p-2.5 border rounded-lg block"
         value={song.songNum}
+        onChange={(evt) => {
+          handleChange({ songNum: evt.target.value.trim() });
+        }}
       />
       <input
         className="w-2/12 p-2.5 ml-2.5 border rounded-lg block"
         value={Array.isArray(song.verses) ? song.verses.join(",") : song.verses}
+        onChange={(evt) => {
+          let verses: number[] | "all";
+          if (evt.target.value === "") {
+            verses = "all";
+          } else {
+            verses = evt.target.value
+              .split(",")
+              .map((val) => +val)
+              .filter((val) => !isNaN(val));
+            if (!verses.length) verses.push(1);
+          }
+          handleChange({ verses });
+        }}
       />
       <input
         className="w-2/12 p-2.5 ml-2.5 border rounded-lg block"
         value={song.standVerse ?? ""}
+        onChange={(evt) => {
+          const val = +evt.target.value.trim();
+          if (!val) {
+            return handleChange({ standVerse: undefined });
+          }
+
+          if (isNaN(val)) return;
+          handleChange({ standVerse: val });
+        }}
       />
     </div>
   );
@@ -78,60 +118,144 @@ function TextInput(props: {
   order: number;
   data: ServiceData;
   idx: Exclude<keyof ServiceData, "songs" | "mode">;
+  onChange: (data: ServiceData) => void;
 }) {
   return (
     <div className="flex mb-1">
       <div className="w-1/12  p-2.5">{props.order}</div>
-      <div className="w-2/12 p-2.5">
+      <div className="w-2/12 p-2.5 whitespace-nowrap overflow-clip">
         {SERVICE_INFO[props.data.mode].static[props.idx]} :
       </div>
       <input
-        className="w-3/12 p-2.5 border rounded-lg block"
+        className="w-4/12 p-2.5 border rounded-lg block"
         type="text"
         value={props.data[props.idx]}
+        onChange={(evt) => {
+          const newData: ServiceData = {
+            ...props.data,
+            songs: [...props.data.songs],
+          };
+          newData[props.idx] = evt.target.value;
+          props.onChange(newData);
+        }}
       />
     </div>
   );
 }
 
-export function ServiceForm(props: { data: ParsedPdfData }) {
+export function ServiceForm(props: {
+  data: ParsedPdfData;
+  onChange: (data: ParsedPdfData) => void;
+  onReset: () => void;
+}) {
   const [mode, setMode] = useState<ServiceMode>(ServiceMode.INDO);
 
   const serviceData = props.data[mode];
+
+  function handleChange(val: ServiceData) {
+    props.onChange({
+      ...props.data,
+      [mode]: val,
+    });
+  }
+
+  function handleReset(evt: MouseEvent) {
+    evt.preventDefault();
+    props.onReset();
+  }
   return (
-    <form
-      className="max-w-4xl mx-auto m-5"
-      onSubmit={async (evt) => {
-        evt.preventDefault();
-        await createServiceFile(serviceData);
-      }}
-    >
-      <ModeSelector value={mode} onChange={setMode} />
+    <div className="flex h-screen items-center justify-center">
+      <form
+        className="max-w-4xl mx-auto m-5"
+        onSubmit={async (evt) => {
+          evt.preventDefault();
+          await createServiceFile(serviceData);
+        }}
+      >
+        <ModeSelector value={mode} onChange={setMode} />
+        <div>
+          <SongInput
+            order={1}
+            data={serviceData}
+            idx={0}
+            onChange={handleChange}
+          />
+          {/* votum */}
+          <SongInput
+            order={3}
+            data={serviceData}
+            idx={1}
+            onChange={handleChange}
+          />
+          <TextInput
+            order={4}
+            data={serviceData}
+            idx="patik"
+            onChange={handleChange}
+          />
+          <SongInput
+            order={5}
+            data={serviceData}
+            idx={2}
+            onChange={handleChange}
+          />
+          {/* pengakuan dosa*/}
+          <SongInput
+            order={7}
+            data={serviceData}
+            idx={3}
+            onChange={handleChange}
+          />
+          <TextInput
+            order={8}
+            data={serviceData}
+            idx="epistel"
+            onChange={handleChange}
+          />
+          <SongInput
+            order={9}
+            data={serviceData}
+            idx={4}
+            onChange={handleChange}
+          />
+          {/* pengakuan iman*/}
+          {/* koor*/}
+          {/* warta*/}
+          {/* koor*/}
+          <SongInput
+            order={14}
+            data={serviceData}
+            idx={5}
+            onChange={handleChange}
+          />
+          <TextInput
+            order={15}
+            data={serviceData}
+            idx="jamita"
+            onChange={handleChange}
+          />
+          <SongInput
+            order={17}
+            data={serviceData}
+            idx={6}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="flex justify-end px-10">
+          <button
+            onClick={handleReset}
+            className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          >
+            Reset
+          </button>
 
-      <div>
-        <SongInput order={1} data={serviceData} idx={0} />
-        {/* votum */}
-        <SongInput order={3} data={serviceData} idx={1} />
-        <TextInput order={4} data={serviceData} idx="patik" />
-        <SongInput order={5} data={serviceData} idx={2} />
-        {/* pengakuan dosa*/}
-        <SongInput order={7} data={serviceData} idx={3} />
-        <TextInput order={8} data={serviceData} idx="epistel" />
-        <SongInput order={9} data={serviceData} idx={4} />
-        {/* pengakuan iman*/}
-        {/* koor*/}
-        {/* warta*/}
-        {/* koor*/}
-        <SongInput order={14} data={serviceData} idx={5} />
-        <TextInput order={15} data={serviceData} idx="jamita" />
-        <SongInput order={17} data={serviceData} idx={6} />
-      </div>
-
-      <input
-        className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        type="submit"
-        value="Generate OpenLP"
-      />
-    </form>
+          <input
+            className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            type="submit"
+            value="Generate"
+          />
+        </div>
+      </form>
+    </div>
   );
 }

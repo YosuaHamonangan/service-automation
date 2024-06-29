@@ -3,7 +3,7 @@ import { ServiceData } from "./pdf";
 import { getSongData } from "./song";
 import { SERVICE_INFO } from "@/constants";
 
-export async function createServiceFile(serviceData: ServiceData) {
+export async function createOpenLpFile(serviceData: ServiceData) {
   const serviceJSON = [
     ...createEmptyService(),
     await createSongItem(serviceData, 0),
@@ -25,14 +25,7 @@ export async function createServiceFile(serviceData: ServiceData) {
 
   const zip = new JSZip();
   zip.file("service_data.osj", JSON.stringify(serviceJSON));
-  const blob = await zip.generateAsync({ type: "blob" });
-
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = blobUrl;
-  link.download = "service.osz";
-  document.body.appendChild(link);
-  link.click();
+  return await zip.generateAsync({ type: "blob" });
 }
 
 async function createSongItem(serviceData: ServiceData, idx: number) {

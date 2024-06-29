@@ -1,8 +1,29 @@
 import { SERVICE_INFO, ServiceMode } from "@/constants";
-import { createServiceFile } from "@/utils/openLp";
+import { createOpenLpFile } from "@/utils/openLp";
 import { ParsedPdfData, ServiceData, SongVerseData } from "@/utils/pdf";
 import { createServicePPT } from "@/utils/ppt";
+import JSZip from "jszip";
 import { ChangeEvent, MouseEvent, useState } from "react";
+
+async function createServiceFile(serviceData: ServiceData) {
+  const [blobOpenLp, blobPpt] = await Promise.all([
+    createOpenLpFile(serviceData),
+    createServicePPT(serviceData),
+  ]);
+  fileName: "slide";
+
+  const zip = new JSZip();
+  zip.file("service.osz", blobOpenLp);
+  zip.file("slide.pptx", blobPpt);
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = "service.zip";
+  document.body.appendChild(link);
+  link.click();
+}
 
 function ModeSelector(props: {
   value: ServiceMode;
@@ -173,10 +194,8 @@ export function ServiceForm(props: {
         className="max-w-4xl mx-auto m-5"
         onSubmit={async (evt) => {
           evt.preventDefault();
-          await Promise.all([
-            createServiceFile(serviceData),
-            createServicePPT(serviceData),
-          ]);
+
+          await createServiceFile(serviceData);
         }}
       >
         <ModeSelector value={mode} onChange={setMode} />

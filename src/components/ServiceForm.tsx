@@ -1,7 +1,8 @@
 import { SERVICE_INFO, ServiceMode } from "@/constants";
 import { createServiceFile } from "@/utils/openLp";
 import { ParsedPdfData, ServiceData, SongVerseData } from "@/utils/pdf";
-import { ChangeEvent, FormEvent, MouseEvent, useState } from "react";
+import { createServicePPT } from "@/utils/ppt";
+import { ChangeEvent, MouseEvent, useState } from "react";
 
 function ModeSelector(props: {
   value: ServiceMode;
@@ -117,7 +118,10 @@ function SongInput(props: {
 function TextInput(props: {
   order: number;
   data: ServiceData;
-  idx: Exclude<keyof ServiceData, "songs" | "mode">;
+  idx: Exclude<
+    keyof ServiceData,
+    "songs" | "mode" | "epistelCode" | "jamitaCode"
+  >;
   onChange: (data: ServiceData) => void;
 }) {
   return (
@@ -169,7 +173,10 @@ export function ServiceForm(props: {
         className="max-w-4xl mx-auto m-5"
         onSubmit={async (evt) => {
           evt.preventDefault();
-          await createServiceFile(serviceData);
+          await Promise.all([
+            createServiceFile(serviceData),
+            createServicePPT(serviceData),
+          ]);
         }}
       >
         <ModeSelector value={mode} onChange={setMode} />

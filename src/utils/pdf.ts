@@ -1,7 +1,8 @@
-import { SERVICE_INFO, ServiceMode } from "@/constants";
+import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import "pdfjs-dist/legacy/build/pdf.worker";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
+import { closest } from "fastest-levenshtein";
 
 interface LineItems {
   text: string;
@@ -26,7 +27,9 @@ export interface ServiceData {
   songs: SongVerseData[];
   patik: string;
   epistel: string;
+  epistelCode: string;
   jamita: string;
+  jamitaCode: string;
 }
 
 export type ParsedPdfData = Record<ServiceMode, ServiceData>;
@@ -171,9 +174,28 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
       songs,
       patik,
       epistel,
+      epistelCode: getAlkitabCode(epistel, mode),
       jamita,
+      jamitaCode: getAlkitabCode(jamita, mode),
     };
   });
+  return result;
+}
 
+function getAlkitabCode(text: string, mode: ServiceMode) {
+  const textNoSpace = text.replaceAll(" ", "");
+  const parts = textNoSpace.match(/(.+)([0-9]+):(.+)/);
+  if (!parts) return text;
+
+  const books = ALKITAB_INFO[mode];
+  const book = closest(parts[1], books);
+  const chapter = parts[2];
+  const verses = [];
+  const [start, end] = parts[3].split("–");
+  for (let i = +start; i <= +end; i++) {
+    verses.push(i);
+  }
+
+  const result = `${book}-${chapter}-${verses.join(",")}`;
   return result;
 }

@@ -1,6 +1,11 @@
-import { SERVICE_INFO, ServiceMode } from "@/constants";
+import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
 import { createOpenLpFile } from "@/utils/openLp";
-import { ParsedPdfData, ServiceData, SongVerseData } from "@/utils/pdf";
+import {
+  AlkitabInfo,
+  ParsedPdfData,
+  ServiceData,
+  SongVerseData,
+} from "@/utils/pdf";
 import { createServicePPT } from "@/utils/ppt";
 import JSZip from "jszip";
 import { ChangeEvent, MouseEvent, useState } from "react";
@@ -141,7 +146,7 @@ function TextInput(props: {
   data: ServiceData;
   idx: Exclude<
     keyof ServiceData,
-    "songs" | "mode" | "epistelCode" | "jamitaCode"
+    "songs" | "mode" | "epistelInfo" | "jamitaInfo"
   >;
   onChange: (data: ServiceData) => void;
 }) {
@@ -165,6 +170,101 @@ function TextInput(props: {
         }}
       />
     </div>
+  );
+}
+
+function BibleInput(props: {
+  data: ServiceData;
+  idx: "epistelInfo" | "jamitaInfo";
+  onChange: (data: ServiceData) => void;
+}) {
+  const [errors, setErrors] = useState<Partial<AlkitabInfo>>({});
+
+  const info = props.data[props.idx];
+
+  function handleChange(val: Partial<AlkitabInfo>) {
+    const newData: ServiceData = {
+      ...props.data,
+    };
+    newData[props.idx] = {
+      ...info,
+      ...val,
+    };
+    props.onChange(newData);
+  }
+  return (
+    <>
+      <div className="flex mb-1">
+        <div className="w-3/12"></div>
+        <label htmlFor="underline_select" className="sr-only">
+          Underline select
+        </label>
+        <select
+          id="underline_select"
+          className="w-4/12 p-2.5 border-0 border-b-2 border-gray-200  focus:outline-none"
+        >
+          {ALKITAB_INFO[props.data.mode].map((str) => (
+            <option value={str} selected={info.book === str}>
+              {str}
+            </option>
+          ))}
+        </select>
+        <input
+          className="w-2/12 p-2.5 ml-2.5 border rounded-lg block"
+          type="number"
+          value={info.chapter}
+          onChange={(evt) => {
+            handleChange({ chapter: evt.target.value });
+          }}
+        />{" "}
+        <NumberListInput
+          value={info.verses}
+          errorMsg={errors.verses}
+          onChange={([error, verses]) => {
+            setErrors({
+              ...errors,
+              verses: error
+                ? 'Format ayat harus angka dipisah koma CTH "1,2,3"'
+                : undefined,
+            });
+            handleChange({ verses });
+          }}
+        />
+      </div>
+      {errors.verses && (
+        <div className="flex mb-1 text-red-600 dark:text-red-500">
+          <div className="w-1/12"></div>
+          <div className="w-11/12 p-2.5">
+            <span className="font-medium">Error : {errors.verses}</span>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function NumberListInput(props: {
+  value: string;
+  errorMsg?: String;
+  onChange: (result: [boolean, string]) => void;
+}) {
+  return (
+    <input
+      className={
+        "w-2/12 p-2.5 ml-2.5 border rounded-lg block" +
+        (props.errorMsg
+          ? " bg-red-50 border-red-500 text-red-900 placeholder-red-700 focus:ring-red-500 dark:bg-gray-700 focus:border-red-500 dark:text-red-500 dark:placeholder-red-500 dark:border-red-500"
+          : "")
+      }
+      type="texts"
+      value={props.value}
+      onChange={(evt) => {
+        const list = evt.target.value.split(",");
+        const error = list.some((val) => !val || isNaN(+val));
+
+        props.onChange([error, evt.target.value]);
+      }}
+    />
   );
 }
 
@@ -238,6 +338,11 @@ export function ServiceForm(props: {
             idx="epistel"
             onChange={handleChange}
           />
+          <BibleInput
+            data={serviceData}
+            idx="epistelInfo"
+            onChange={handleChange}
+          />
           <SongInput
             order={9}
             data={serviceData}
@@ -258,6 +363,11 @@ export function ServiceForm(props: {
             order={15}
             data={serviceData}
             idx="jamita"
+            onChange={handleChange}
+          />
+          <BibleInput
+            data={serviceData}
+            idx="jamitaInfo"
             onChange={handleChange}
           />
           <SongInput

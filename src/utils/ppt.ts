@@ -1,6 +1,6 @@
 import { ALKITAB_INFO, ServiceMode } from "@/constants";
 import { loadAlkitabDb } from "./db";
-import { ServiceData } from "./pdf";
+import { AlkitabInfo, ServiceData } from "./pdf";
 import PptxGenJS from "pptxgenjs";
 
 export async function createServicePPT(serviceData: ServiceData) {
@@ -8,13 +8,13 @@ export async function createServicePPT(serviceData: ServiceData) {
 
   const epistel = await getAlkitabtext(
     serviceData.mode,
-    serviceData.epistelCode
+    serviceData.epistelInfo
   );
   epistel.forEach((content) => {
     addTextSlide(pptx, serviceData.epistel, content);
   });
 
-  const jamita = await getAlkitabtext(serviceData.mode, serviceData.jamitaCode);
+  const jamita = await getAlkitabtext(serviceData.mode, serviceData.jamitaInfo);
   jamita.forEach((content) => {
     addTextSlide(pptx, serviceData.jamita, content);
   });
@@ -80,8 +80,8 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
   });
 }
 
-async function getAlkitabtext(mode: ServiceMode, code: string) {
-  const [book, chapter, verses] = code.split("-");
+async function getAlkitabtext(mode: ServiceMode, info: AlkitabInfo) {
+  const { book, chapter, verses } = info;
   const db = await loadAlkitabDb(mode, ALKITAB_INFO[mode].indexOf(book) + 1);
   const chapterText = db[+chapter - 1];
 

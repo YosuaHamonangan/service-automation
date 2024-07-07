@@ -22,14 +22,20 @@ export interface SongVerseData {
   standVerse?: number;
 }
 
+export interface AlkitabInfo {
+  book: string;
+  chapter: string;
+  verses: string;
+}
+
 export interface ServiceData {
   mode: ServiceMode;
   songs: SongVerseData[];
   patik: string;
   epistel: string;
-  epistelCode: string;
+  epistelInfo: AlkitabInfo;
   jamita: string;
-  jamitaCode: string;
+  jamitaInfo: AlkitabInfo;
 }
 
 export type ParsedPdfData = Record<ServiceMode, ServiceData>;
@@ -174,18 +180,18 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
       songs,
       patik,
       epistel,
-      epistelCode: getAlkitabCode(epistel, mode),
+      epistelInfo: getAlkitabInfo(epistel, mode),
       jamita,
-      jamitaCode: getAlkitabCode(jamita, mode),
+      jamitaInfo: getAlkitabInfo(jamita, mode),
     };
   });
   return result;
 }
 
-function getAlkitabCode(text: string, mode: ServiceMode) {
+function getAlkitabInfo(text: string, mode: ServiceMode): AlkitabInfo {
   const textNoSpace = text.replaceAll(" ", "");
-  const parts = textNoSpace.match(/(.+)([0-9]+):(.+)/);
-  if (!parts) return text;
+  const parts = textNoSpace.match(/(.+?)([0-9]+):(.+)/);
+  if (!parts) return { book: "0", chapter: "1", verses: "1" };
 
   const books = ALKITAB_INFO[mode];
   const book = closest(parts[1], books);
@@ -196,6 +202,9 @@ function getAlkitabCode(text: string, mode: ServiceMode) {
     verses.push(i);
   }
 
-  const result = `${book}-${chapter}-${verses.join(",")}`;
-  return result;
+  return {
+    book,
+    chapter,
+    verses: verses.join(","),
+  };
 }

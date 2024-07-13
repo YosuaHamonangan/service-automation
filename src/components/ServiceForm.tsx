@@ -1,4 +1,5 @@
 import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
+import { downloadBlob } from "@/utils/blob";
 import { createOpenLpFile } from "@/utils/openLp";
 import {
   AlkitabInfo,
@@ -15,19 +16,13 @@ async function createServiceFile(serviceData: ServiceData) {
     createOpenLpFile(serviceData),
     createServicePPT(serviceData),
   ]);
-  fileName: "slide";
 
   const zip = new JSZip();
   zip.file("service.osz", blobOpenLp);
   zip.file("slide.pptx", blobPpt);
 
   const blob = await zip.generateAsync({ type: "blob" });
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = blobUrl;
-  link.download = "service.zip";
-  document.body.appendChild(link);
-  link.click();
+  downloadBlob(blob, "service.zip");
 }
 
 function ModeSelector(props: {
@@ -289,7 +284,7 @@ export function ServiceForm(props: {
     props.onReset();
   }
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex  items-center justify-center">
       <form
         className="max-w-4xl mx-auto m-5"
         onSubmit={async (evt) => {

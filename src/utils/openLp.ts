@@ -1,7 +1,31 @@
 import JSZip from "jszip";
 import { ServiceData } from "./pdf";
 import { getSongData } from "./song";
-import { SERVICE_INFO } from "@/constants";
+import { SERVICE_INFO, ServiceMode } from "@/constants";
+import { loadSongDb } from "./db";
+
+export async function createAllOpenLpSongFile(
+  mode: ServiceMode,
+  onUpdate?: (progress: number | null) => void
+) {
+  onUpdate?.(0);
+  const db = await loadSongDb(mode);
+
+  const zip = new JSZip();
+  for (let i = 0; i < db.length; i++) {
+    const { num } = db[i];
+    const slideData = await getSongData(num, mode);
+    if (!slideData) continue;
+    slideData.xml;
+    await zip.file(
+      `${mode} ${num} (${SERVICE_INFO[mode].author}).xml`,
+      slideData.xml
+    );
+    onUpdate?.((i + 1) / db.length);
+  }
+
+  return await zip.generateAsync({ type: "blob" });
+}
 
 export async function createOpenLpFile(serviceData: ServiceData) {
   const serviceJSON = [

@@ -90,7 +90,7 @@ async function getAlkitabtext(mode: ServiceMode, info: AlkitabInfo) {
     const verse = chapterText[+v - 1];
     if (!verse) return;
 
-    result.push(`${chapter}:${v} ${verse}`);
+    result.push(verse);
   });
   return result;
 }

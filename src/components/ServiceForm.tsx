@@ -203,8 +203,8 @@ function BibleInput(props: {
           id="underline_select"
           className="w-4/12 p-2.5 border-0 border-b-2 border-gray-200  focus:outline-none"
         >
-          {ALKITAB_INFO[props.data.mode].map((str) => (
-            <option value={str} selected={info.book === str}>
+          {ALKITAB_INFO[props.data.mode].map((str, i) => (
+            <option key={i} value={str} selected={info.book === str}>
               {str}
             </option>
           ))}

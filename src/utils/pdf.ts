@@ -94,10 +94,15 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
   });
 
   const votumItem: TextItem[] = [];
-  pdfData[2].items.forEach((item) => {
-    const normText = item.str.trim().replaceAll(" ", "");
-    if (normText.includes(votumFilter)) votumItem.push(item);
-  });
+  pdfData
+    .find((data) => {
+      const normText = data.text.replaceAll(" ", "");
+      return normText.includes(votumFilter);
+    })
+    ?.items.forEach((item) => {
+      const normText = item.str.trim().replaceAll(" ", "");
+      if (normText.includes(votumFilter)) votumItem.push(item);
+    });
 
   const result: ParsedPdfData = {} as any;
   Object.values(ServiceMode).forEach((mode) => {
@@ -167,13 +172,19 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
       });
 
     const patik =
-      lines[4]?.match(new RegExp(SERVICE_INFO[mode].patikFormat))?.[1] ?? "";
+      lines
+        .find((str) => str.match(new RegExp(SERVICE_INFO[mode].patikFormat)))
+        ?.match(new RegExp(SERVICE_INFO[mode].patikFormat))?.[1] ?? "";
 
     const epistel =
-      lines[8]?.match(new RegExp(SERVICE_INFO[mode].epistelFormat))?.[1] ?? "";
+      lines
+        .find((str) => str.match(new RegExp(SERVICE_INFO[mode].epistelFormat)))
+        ?.match(new RegExp(SERVICE_INFO[mode].epistelFormat))?.[1] ?? "";
 
     const jamita =
-      lines[15]?.match(new RegExp(SERVICE_INFO[mode].jamitaFormat))?.[1] ?? "";
+      lines
+        .find((str) => str.match(new RegExp(SERVICE_INFO[mode].jamitaFormat)))
+        ?.match(new RegExp(SERVICE_INFO[mode].jamitaFormat))?.[1] ?? "";
 
     result[mode] = {
       mode,

@@ -1,10 +1,19 @@
 import { ALKITAB_INFO, ServiceMode } from "@/constants";
 import { loadAlkitabDb } from "./db";
-import { AlkitabInfo, ServiceData } from "./pdf";
+import { AlkitabInfo, ParsedPdfData } from "./pdf";
 import PptxGenJS from "pptxgenjs";
 
-export async function createServicePPT(serviceData: ServiceData) {
-  var pptx = new PptxGenJS();
+export async function createServicePPT(
+  pdfData: ParsedPdfData,
+  mode: ServiceMode
+) {
+  const serviceData = pdfData.serviceData[mode];
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_4x3";
+
+  if (pdfData.serviceTableImage) {
+    addImageSlide(pptx, pdfData.serviceTableImage);
+  }
 
   const epistel = await getAlkitabtext(
     serviceData.mode,
@@ -12,6 +21,10 @@ export async function createServicePPT(serviceData: ServiceData) {
   );
   epistel.forEach((content) => {
     addTextSlide(pptx, serviceData.epistel, content);
+  });
+
+  pdfData.wartaImages.forEach((image) => {
+    addImageSlide(pptx, image);
   });
 
   const jamita = await getAlkitabtext(serviceData.mode, serviceData.jamitaInfo);
@@ -56,13 +69,11 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
     w: 2.05,
     h: 1.54,
   });
-
-  const Y_MULTIPLIER = 1 / 1.33;
   slide.addText(title, {
     x: 1.85,
-    y: 0.17 * Y_MULTIPLIER,
+    y: 0.17,
     w: 7.36,
-    h: 0.71 * Y_MULTIPLIER,
+    h: 0.71,
     bold: true,
     fontSize: 36,
     fontFace: "Arial",
@@ -70,13 +81,30 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
 
   slide.addText(content, {
     x: 0.68,
-    y: 1.84 * Y_MULTIPLIER,
+    y: 1.84,
     w: 8.64,
-    h: 1.84 * Y_MULTIPLIER,
+    h: 1.84,
     fontSize: 36,
     fontFace: "Arial",
     valign: "top",
     autoFit: true,
+  });
+}
+
+function addImageSlide(pptx: PptxGenJS, canvas: HTMLCanvasElement) {
+  const slide = pptx.addSlide();
+
+  slide.addImage({
+    data: canvas.toDataURL(),
+    x: "5%",
+    y: "2%",
+    w: "90%",
+    h: "96%",
+    sizing: {
+      type: "contain",
+      w: "90%",
+      h: "96%",
+    },
   });
 }
 

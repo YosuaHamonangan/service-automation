@@ -1,8 +1,11 @@
 import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import "pdfjs-dist/legacy/build/pdf.worker";
-import { TextItem } from "pdfjs-dist/types/src/display/api";
+import { RenderParameters, TextItem } from "pdfjs-dist/types/src/display/api";
 import { closest } from "fastest-levenshtein";
+import { PDFPageProxy } from "pdfjs-dist/types/web/interfaces";
+
+const IMAGE_PDF_SCALING = 2;
 
 interface LineItems {
   text: string;
@@ -15,6 +18,12 @@ const POS_TOLERANCE = 0.3;
 const TOP_BOUND = "Acara Kebaktian Minggu";
 const BOT_BOUND = "Pelayan Kebaktian Minggu";
 const VOTUM_TEXT = "Votum";
+const WARTA_TEXT = "WARTA UMUM";
+
+const topBoundFilter = TOP_BOUND.trim().replaceAll(" ", "");
+const botBoundFilter = BOT_BOUND.trim().replaceAll(" ", "");
+const votumFilter = VOTUM_TEXT.trim().replaceAll(" ", "");
+const wartaFilter = WARTA_TEXT.trim().replaceAll(" ", "");
 
 export interface SongVerseData {
   songNum: string;
@@ -38,25 +47,43 @@ export interface ServiceData {
   jamitaInfo: AlkitabInfo;
 }
 
-export type ParsedPdfData = Record<ServiceMode, ServiceData>;
+export interface ParsedPdfData {
+  serviceData: Record<ServiceMode, ServiceData>;
+  serviceTableImage: HTMLCanvasElement | undefined;
+  wartaImages: HTMLCanvasElement[];
+}
+
+interface CropData {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface PdfInitialSummary {
+  pdfData: LineItems[];
+  serviceTableData: {
+    topBound?: LineItems;
+    botBound?: LineItems;
+    page?: PDFPageProxy;
+  };
+  wartaPage?: PDFPageProxy;
+}
 
 export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
-  const loadingTask = getDocument(await pdfFile.arrayBuffer());
-  const pdfDocument = await loadingTask.promise;
+  const pdfDocument = await getDocument(await pdfFile.arrayBuffer()).promise;
 
-  const topBoundFilter = TOP_BOUND.trim().replaceAll(" ", "");
-  const botBoundFilter = BOT_BOUND.trim().replaceAll(" ", "");
-  const votumFilter = VOTUM_TEXT.trim().replaceAll(" ", "");
+  const initialSummary: PdfInitialSummary = {
+    pdfData: [],
+    serviceTableData: {},
+  };
 
-  let pdfData: LineItems[] = [];
   let curLineItems: LineItems = {
     text: "",
     items: [],
     page: 0,
     isFirstHalf: false,
   };
-  let topBound: LineItems | undefined;
-  let botBound: LineItems | undefined;
   for (let p = 1; p <= pdfDocument.numPages; p++) {
     const page = await pdfDocument.getPage(p);
     const textContent = await page.getTextContent();
@@ -70,24 +97,39 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
         if (item.hasEOL) {
           const normText = curLineItems.text.trim().replaceAll(" ", "");
           if (normText.includes(topBoundFilter)) {
-            topBound = curLineItems;
+            initialSummary.serviceTableData.topBound = curLineItems;
+            initialSummary.serviceTableData.page = page;
           } else if (normText.includes(botBoundFilter)) {
-            botBound = curLineItems;
+            initialSummary.serviceTableData.botBound = curLineItems;
+          } else if (normText.includes(wartaFilter)) {
+            initialSummary.wartaPage = page;
           }
+
           curLineItems.page = p;
-          curLineItems.isFirstHalf = item.transform[4] < pageWidth / 2;
-          pdfData.push(curLineItems);
+          curLineItems.isFirstHalf = getX(curLineItems) < pageWidth / 2;
+          initialSummary.pdfData.push(curLineItems);
           curLineItems = { text: "", items: [], page: 0, isFirstHalf: false };
         }
       }
     });
   }
 
-  pdfData = pdfData.filter((lineItems) => {
-    const y = lineItems.items[0].transform[5];
+  return {
+    serviceData: parseServiceData(initialSummary),
+    serviceTableImage: await getServiceTableImage(initialSummary),
+    wartaImages: await getWartaImages(initialSummary),
+  };
+}
+
+function parseServiceData(
+  initialSummary: PdfInitialSummary
+): Record<ServiceMode, ServiceData> {
+  const { topBound, botBound } = initialSummary.serviceTableData;
+  const pdfData = initialSummary.pdfData.filter((lineItems) => {
+    const y = getY(lineItems);
     return (
-      y < topBound?.items[0].transform[5] &&
-      y > botBound?.items[0].transform[5] &&
+      y < getY(topBound) &&
+      y > getY(botBound) &&
       lineItems.page === topBound?.page &&
       lineItems.isFirstHalf === topBound.isFirstHalf
     );
@@ -104,18 +146,18 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
       if (normText.includes(votumFilter)) votumItem.push(item);
     });
 
-  const result: ParsedPdfData = {} as any;
+  const result: Record<ServiceMode, ServiceData> = {} as any;
   Object.values(ServiceMode).forEach((mode) => {
     let leftBound = 0;
     let rightBound = 0;
     switch (mode) {
       case ServiceMode.INDO:
-        leftBound = votumItem[0].transform[4] - POS_TOLERANCE;
-        rightBound = votumItem[1].transform[4];
+        leftBound = getX(votumItem[0]) - POS_TOLERANCE;
+        rightBound = getX(votumItem[1]);
         break;
 
       case ServiceMode.BATAK:
-        leftBound = votumItem[1].transform[4] - POS_TOLERANCE;
+        leftBound = getX(votumItem[1]) - POS_TOLERANCE;
         rightBound = Infinity;
         break;
 
@@ -127,7 +169,7 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
     const lines = pdfData
       .map((lineItems) => {
         const items = lineItems.items.filter((item) => {
-          const x = item.transform[4];
+          const x = getX(item);
           return x > leftBound && x < rightBound;
         });
         const text = items.reduce((val, { str }) => val + str, "");
@@ -196,7 +238,120 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
       jamitaInfo: getAlkitabInfo(jamita, mode),
     };
   });
+
   return result;
+}
+
+async function getServiceTableImage(
+  initialSummary: PdfInitialSummary
+): Promise<HTMLCanvasElement | undefined> {
+  const tablePage = initialSummary.serviceTableData.page;
+  if (tablePage) {
+    const pageCanvas = await drawPage(tablePage);
+    const { width: pageWidth, height: pageHeight } = tablePage.getViewport({
+      scale: 1,
+    });
+    const topLineHeight = getHeight(initialSummary.serviceTableData.topBound);
+
+    const top =
+      pageHeight -
+      getY(initialSummary.serviceTableData.topBound) -
+      topLineHeight;
+    const bot =
+      pageHeight -
+      getY(initialSummary.serviceTableData.botBound) -
+      topLineHeight;
+
+    return await drawCroppedPage(pageCanvas, {
+      x: pageWidth / 2,
+      y: top,
+      w: pageWidth / 2,
+      h: bot - top,
+    });
+  }
+}
+
+async function getWartaImages(
+  initialSummary: PdfInitialSummary
+): Promise<HTMLCanvasElement[]> {
+  const { wartaPage } = initialSummary;
+  if (!wartaPage) return [];
+  const pdfData = initialSummary.pdfData.filter((lineItems) => {
+    return lineItems.page === wartaPage.pageNumber;
+  });
+
+  let firstHalfMinX = Infinity;
+  let secondHalfMinX = Infinity;
+  pdfData.forEach((lineItems) => {
+    const x = getX(lineItems);
+    if (lineItems.isFirstHalf && x < firstHalfMinX) {
+      firstHalfMinX = x;
+    } else if (!lineItems.isFirstHalf && x < secondHalfMinX) {
+      secondHalfMinX = x;
+    }
+  });
+  firstHalfMinX += POS_TOLERANCE;
+  secondHalfMinX += POS_TOLERANCE;
+
+  const subHeaders = pdfData.filter((lineItems) => {
+    const x = getX(lineItems);
+    return (
+      (lineItems.isFirstHalf && x < firstHalfMinX) ||
+      (!lineItems.isFirstHalf && x < secondHalfMinX)
+    );
+  });
+
+  const { width: pageWidth, height: pageHeight } = wartaPage.getViewport({
+    scale: 1,
+  });
+  const pageMidY = pageHeight / 2;
+
+  let firstHalfMidY = 0;
+  let secondHalfMidY = 0;
+  subHeaders.forEach((lineItems) => {
+    const height = getHeight(lineItems);
+    const y = pageHeight - getY(lineItems) - height;
+    if (
+      lineItems.isFirstHalf &&
+      Math.abs(y - pageMidY) < Math.abs(firstHalfMidY - pageMidY)
+    ) {
+      firstHalfMidY = y;
+    } else if (
+      !lineItems.isFirstHalf &&
+      Math.abs(y - pageMidY) < Math.abs(secondHalfMidY - pageMidY)
+    ) {
+      secondHalfMidY = y;
+    }
+  });
+
+  const pageCanvas = await drawPage(wartaPage);
+
+  return await Promise.all([
+    drawCroppedPage(pageCanvas, {
+      x: 0,
+      y: 0,
+      w: pageWidth / 2,
+      h: firstHalfMidY,
+    }),
+    drawCroppedPage(pageCanvas, {
+      x: 0,
+      y: firstHalfMidY,
+      w: pageWidth / 2,
+      h: pageHeight - firstHalfMidY,
+    }),
+    drawCroppedPage(pageCanvas, {
+      x: pageWidth / 2,
+      y: 0,
+      w: pageWidth / 2,
+      h: secondHalfMidY,
+    }),
+    drawCroppedPage(pageCanvas, {
+      x: pageWidth / 2,
+      y: secondHalfMidY,
+      w: pageWidth / 2,
+      h: pageHeight - secondHalfMidY,
+    }),
+  ]);
 }
 
 function getAlkitabInfo(text: string, mode: ServiceMode): AlkitabInfo {
@@ -218,4 +373,71 @@ function getAlkitabInfo(text: string, mode: ServiceMode): AlkitabInfo {
     chapter,
     verses: verses.join(","),
   };
+}
+
+async function drawPage(page: PDFPageProxy): Promise<HTMLCanvasElement> {
+  const viewport = page.getViewport({ scale: IMAGE_PDF_SCALING });
+  const canvas = document.createElement("canvas");
+  canvas.height = viewport.height;
+  canvas.width = viewport.width;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const renderContext: RenderParameters = {
+      canvasContext: ctx,
+      viewport: viewport,
+    };
+
+    await page.render(renderContext).promise;
+  }
+  return canvas;
+}
+
+async function drawCroppedPage(
+  pageCanvas: HTMLCanvasElement,
+  crop: CropData
+): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement("canvas");
+  canvas.height = crop.h * IMAGE_PDF_SCALING;
+  canvas.width = crop.w * IMAGE_PDF_SCALING;
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.drawImage(
+      pageCanvas,
+      crop.x * IMAGE_PDF_SCALING,
+      crop.y * IMAGE_PDF_SCALING,
+      crop.w * IMAGE_PDF_SCALING,
+      crop.h * IMAGE_PDF_SCALING,
+      0,
+      0,
+      crop.w * IMAGE_PDF_SCALING,
+      crop.h * IMAGE_PDF_SCALING
+    );
+    // document.body.appendChild(canvas);
+  }
+  return canvas;
+}
+
+function getX(item: LineItems | TextItem | undefined): number {
+  if (!item) return 0;
+  if ("items" in item) {
+    item = item.items[0];
+  }
+  return item.transform[4] ?? 0;
+}
+
+function getY(item: LineItems | TextItem | undefined): number {
+  if (!item) return 0;
+  if ("items" in item) {
+    item = item.items[0];
+  }
+  return item.transform[5] ?? 0;
+}
+
+function getHeight(item: LineItems | TextItem | undefined): number {
+  if (!item) return 0;
+  if ("items" in item) {
+    item = item.items[0];
+  }
+  return item.height;
 }

@@ -9,12 +9,19 @@ import {
 } from "@/utils/pdf";
 import { createServicePPT } from "@/utils/ppt";
 import JSZip from "jszip";
-import { ChangeEvent, MouseEvent, useState } from "react";
+import {
+  ChangeEvent,
+  InputHTMLAttributes,
+  MouseEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
-async function createServiceFile(serviceData: ServiceData) {
+async function createServiceFile(pdfData: ParsedPdfData, mode: ServiceMode) {
   const [blobOpenLp, blobPpt] = await Promise.all([
-    createOpenLpFile(serviceData),
-    createServicePPT(serviceData),
+    createOpenLpFile(pdfData.serviceData[mode]),
+    createServicePPT(pdfData, mode),
   ]);
 
   const zip = new JSZip();
@@ -264,6 +271,20 @@ function NumberListInput(props: {
   );
 }
 
+function CanvasView(
+  props: { canvas: HTMLCanvasElement } & InputHTMLAttributes<HTMLDivElement>
+) {
+  const container = useRef<HTMLDivElement>(null);
+  HTMLDivElement;
+  useEffect(() => {
+    if (!container.current) return;
+    container.current.innerHTML = "";
+    container.current.append(props.canvas);
+  }, [container, props.canvas]);
+
+  return <div ref={container} {...props} />;
+}
+
 export function ServiceForm(props: {
   data: ParsedPdfData;
   onChange: (data: ParsedPdfData) => void;
@@ -271,7 +292,7 @@ export function ServiceForm(props: {
 }) {
   const [mode, setMode] = useState<ServiceMode>(ServiceMode.INDO);
 
-  const serviceData = props.data[mode];
+  const serviceData = props.data.serviceData[mode];
 
   function handleChange(val: ServiceData) {
     props.onChange({
@@ -284,6 +305,12 @@ export function ServiceForm(props: {
     evt.preventDefault();
     props.onReset();
   }
+
+  const images = [
+    ...(props.data.serviceTableImage ? [props.data.serviceTableImage] : []),
+    ...props.data.wartaImages,
+  ];
+
   return (
     <div className="flex  items-center justify-center">
       <form
@@ -291,7 +318,7 @@ export function ServiceForm(props: {
         onSubmit={async (evt) => {
           evt.preventDefault();
 
-          await createServiceFile(serviceData);
+          await createServiceFile(props.data, mode);
         }}
       >
         <ModeSelector value={mode} onChange={setMode} />
@@ -386,6 +413,13 @@ export function ServiceForm(props: {
             type="submit"
             value="Generate"
           />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-10">
+          {images.map((image, i) => {
+            image.className = "h-auto max-w-full rounded-lg";
+            return <CanvasView key={i} canvas={image} />;
+          })}
         </div>
       </form>
     </div>

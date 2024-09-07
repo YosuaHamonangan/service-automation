@@ -280,6 +280,12 @@ async function getWartaImages(
     return lineItems.page === wartaPage.pageNumber;
   });
 
+  const { width: pageWidth, height: pageHeight } = wartaPage.getViewport({
+    scale: 1,
+  });
+  const tolerance = pageWidth / 200; // around 1 char
+  const pageMidY = pageHeight / 2;
+
   let firstHalfMinX = Infinity;
   let secondHalfMinX = Infinity;
   pdfData.forEach((lineItems) => {
@@ -290,8 +296,8 @@ async function getWartaImages(
       secondHalfMinX = x;
     }
   });
-  firstHalfMinX += POS_TOLERANCE;
-  secondHalfMinX += POS_TOLERANCE;
+  firstHalfMinX += tolerance;
+  secondHalfMinX += tolerance;
 
   const subHeaders = pdfData.filter((lineItems) => {
     const x = getX(lineItems);
@@ -300,11 +306,6 @@ async function getWartaImages(
       (!lineItems.isFirstHalf && x < secondHalfMinX)
     );
   });
-
-  const { width: pageWidth, height: pageHeight } = wartaPage.getViewport({
-    scale: 1,
-  });
-  const pageMidY = pageHeight / 2;
 
   let firstHalfMidY = 0;
   let secondHalfMidY = 0;

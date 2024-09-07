@@ -98,8 +98,8 @@ function addImageSlide(pptx: PptxGenJS, canvas: HTMLCanvasElement) {
     data: canvas.toDataURL(),
     x: "5%",
     y: "2%",
-    w: "90%",
-    h: "96%",
+    w: canvas.width,
+    h: canvas.height,
     sizing: {
       type: "contain",
       w: "90%",

@@ -7,6 +7,7 @@ export const SERVICE_INFO = {
   [ServiceMode.INDO]: {
     author: "Buku Nyanyian HKBP",
     stand: "Berdiri",
+    music: "Musik",
     songDb: "/db/BN.json",
     alkitabDb: "/db/alkitab/indo/",
     patikFormat: "Hukum Taurat\\ ?:?\\ ?(.+)",
@@ -27,6 +28,7 @@ export const SERVICE_INFO = {
   [ServiceMode.BATAK]: {
     author: "Buku Ende",
     stand: "Jongjong",
+    music: "Musik",
     songDb: "/db/BE.json",
     alkitabDb: "/db/alkitab/batak/",
     patikFormat: "Patik\\ ?:?\\ ?(.+)",

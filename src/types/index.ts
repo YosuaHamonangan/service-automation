@@ -10,6 +10,7 @@ export interface SongSlideData extends SongLyricData {
     verseTag: string;
     slides: string[];
   }[];
+  spSlideIdx: number;
   author: string;
   verseOrder: string[];
   xml: string;

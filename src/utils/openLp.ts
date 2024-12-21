@@ -59,10 +59,26 @@ async function createSongItem(serviceData: ServiceData, idx: number) {
   if (!songData) throw new Error("Song not found");
 
   const titleSlide = songData.verseSlides[0];
-  const standSlide = songData.verseSlides[songData.verseSlides.length - 1];
+
+  const spSlideIdx = songData.verseSlides.length - 2;
+  const standSlide = songData.verseSlides[spSlideIdx];
+  const musicSlide = songData.verseSlides[spSlideIdx + 1];
+
   const slides = [];
   const verseOrder = [];
-  if (verses !== "all") {
+  if (verses === "all") {
+    songData.verseSlides.forEach((slide, i) => {
+      if (i >= spSlideIdx) return;
+
+      slides.push(slide);
+      verseOrder.push(slide.verseTag);
+
+      if (i && i % 2 === 0) {
+        slides.push(musicSlide);
+        verseOrder.push(musicSlide.verseTag);
+      }
+    });
+  } else {
     slides.push(titleSlide);
     verseOrder.push(titleSlide.verseTag);
 

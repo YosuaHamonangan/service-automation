@@ -87,7 +87,7 @@ function SongInput(props: {
   idx: number;
   onChange: (data: ServiceData) => void;
 }) {
-  const song = props.data.songs[props.idx];
+  const song = props.data.songs[props.idx] ?? {};
 
   function handleChange(val: Partial<SongVerseData>) {
     const newData: ServiceData = {

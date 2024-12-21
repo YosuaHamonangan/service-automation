@@ -31,11 +31,19 @@ export async function getSongData(songNum: string, mode: ServiceMode) {
     verseOrder.push(verseTag);
   });
 
+  const spSlideIdx = verseOrder.length;
+
   verseSlides.push({
     verseTag: "O1",
     slides: [`--- ${SERVICE_INFO[mode].stand} ---`],
   });
   verseOrder.push("O1");
+
+  verseSlides.push({
+    verseTag: "O2",
+    slides: [`--- ${SERVICE_INFO[mode].music} ---`],
+  });
+  verseOrder.push("O2");
 
   const result: SongSlideData = {
     title,
@@ -43,6 +51,7 @@ export async function getSongData(songNum: string, mode: ServiceMode) {
     num,
     lyric,
     verseSlides,
+    spSlideIdx,
     author: SERVICE_INFO[mode].author,
     verseOrder,
     xml: "",

@@ -297,7 +297,10 @@ export function ServiceForm(props: {
   function handleChange(val: ServiceData) {
     props.onChange({
       ...props.data,
-      [mode]: val,
+      serviceData: {
+        ...props.data.serviceData,
+        [mode]: val,
+      },
     });
   }
 

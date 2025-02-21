@@ -1,24 +1,24 @@
 import JSZip from "jszip";
 import { ServiceData } from "./pdf";
 import { getSongData } from "./song";
-import { SERVICE_INFO, ServiceMode } from "@/constants";
+import { SERVICE_INFO, SONG_INFO, SongSource } from "@/constants";
 import { loadSongDb } from "./db";
 
 export async function createAllOpenLpSongFile(
-  mode: ServiceMode,
+  source: SongSource,
   onUpdate?: (progress: number | null) => void
 ) {
   onUpdate?.(0);
-  const db = await loadSongDb(mode);
+  const db = await loadSongDb(source);
 
   const zip = new JSZip();
   for (let i = 0; i < db.length; i++) {
     const { num } = db[i];
-    const slideData = await getSongData(num, mode);
+    const slideData = await getSongData(num, source);
     if (!slideData) continue;
     slideData.xml;
     await zip.file(
-      `${mode} ${num} (${SERVICE_INFO[mode].author}).xml`,
+      `${source} ${num} (${SONG_INFO[source].author}).xml`,
       slideData.xml
     );
     onUpdate?.((i + 1) / db.length);
@@ -53,10 +53,11 @@ export async function createOpenLpFile(serviceData: ServiceData) {
 }
 
 async function createSongItem(serviceData: ServiceData, idx: number) {
-  const { songNum, verses, standVerse } = serviceData.songs[idx];
+  if (!serviceData.songs[idx]) return createEmptySong();
+  const { source, songNum, verses, standVerse } = serviceData.songs[idx];
 
-  const songData = await getSongData(songNum, serviceData.mode);
-  if (!songData) throw new Error("Song not found");
+  const songData = await getSongData(songNum, source);
+  if (!songData) return createEmptySong();
 
   const titleSlide = songData.verseSlides[0];
 
@@ -178,7 +179,7 @@ function createEmptySong() {
 
 function createCustomItem(
   serviceData: ServiceData,
-  staticKey: keyof (typeof SERVICE_INFO)["BE"]["static"],
+  staticKey: keyof (typeof SERVICE_INFO)["INDO"]["static"],
   dataKey?: Exclude<keyof ServiceData, "songs">
 ) {
   const customJSON = createEmptyCustom();

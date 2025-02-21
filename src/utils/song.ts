@@ -1,15 +1,17 @@
-import { SERVICE_INFO, ServiceMode, TEMPLATE_KEY } from "@/constants";
+import { SONG_INFO, SongSource, TEMPLATE_KEY } from "@/constants";
 import { loadSongDb } from "./db";
 import { SongSlideData } from "@/types";
 import { loadTemplate } from "./template";
 
-export async function getSongData(songNum: string, mode: ServiceMode) {
-  const songData = (await loadSongDb(mode)).find(({ num }) => num === songNum);
+export async function getSongData(songNum: string, source: SongSource) {
+  const songData = (await loadSongDb(source)).find(
+    ({ num }) => num === songNum
+  );
   if (!songData) return;
 
   const { title, num } = songData;
 
-  const titleNum = `${mode} ${num}`;
+  const titleNum = `${source} ${num}`;
 
   const lyric = songData.lyric.filter((l) => l);
 
@@ -35,13 +37,13 @@ export async function getSongData(songNum: string, mode: ServiceMode) {
 
   verseSlides.push({
     verseTag: "O1",
-    slides: [`--- ${SERVICE_INFO[mode].stand} ---`],
+    slides: [`--- ${SONG_INFO[source].stand} ---`],
   });
   verseOrder.push("O1");
 
   verseSlides.push({
     verseTag: "O2",
-    slides: [`--- ${SERVICE_INFO[mode].music} ---`],
+    slides: [`--- ${SONG_INFO[source].music} ---`],
   });
   verseOrder.push("O2");
 
@@ -52,7 +54,7 @@ export async function getSongData(songNum: string, mode: ServiceMode) {
     lyric,
     verseSlides,
     spSlideIdx,
-    author: SERVICE_INFO[mode].author,
+    author: SONG_INFO[source].author,
     verseOrder,
     xml: "",
   };

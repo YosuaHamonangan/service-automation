@@ -1,18 +1,21 @@
-import { ServiceMode } from "@/constants";
+import { SongSource } from "@/constants";
 import { downloadBlob } from "@/utils/blob";
 import { createAllOpenLpSongFile } from "@/utils/openLp";
 import { useState } from "react";
 
-function DownloadButton(props: { mode: ServiceMode; text: string }) {
+function DownloadButton(props: { source: SongSource; text: string }) {
   const [progress, setProgress] = useState<number | null>(null);
   async function createAndDownload() {
     if (progress !== null) return;
 
     try {
-      const blob = await createAllOpenLpSongFile(props.mode, (newProgress) => {
-        setProgress(newProgress);
-      });
-      downloadBlob(blob, `result-${props.mode}.zip`);
+      const blob = await createAllOpenLpSongFile(
+        props.source,
+        (newProgress) => {
+          setProgress(newProgress);
+        }
+      );
+      downloadBlob(blob, `result-${props.source}.zip`);
     } finally {
       setProgress(null);
     }
@@ -45,8 +48,14 @@ export default function Page() {
         Pilih database lagu yang ingin di download
       </div>
       <div className="flex items-center justify-center space-x-4">
-        <DownloadButton mode={ServiceMode.INDO} text="Buku Nyanyian HKBP" />
-        <DownloadButton mode={ServiceMode.BATAK} text="Buku Ende" />
+        <DownloadButton source={SongSource.BN} text="Buku Nyanyian HKBP" />
+        <DownloadButton source={SongSource.BE} text="Buku Ende" />
+        <DownloadButton source={SongSource.KJ} text="Kidung Jemaat" />
+        <DownloadButton
+          source={SongSource.PKJ}
+          text="Pelengkap Kidung Jemaat"
+        />
+        <DownloadButton source={SongSource.NKB} text="Nyanyian Kidung Baru" />
       </div>
     </div>
   );

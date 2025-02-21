@@ -1,14 +1,18 @@
 export enum ServiceMode {
-  INDO = "BN",
-  BATAK = "BE",
+  INDO = "INDO",
+  BATAK = "BATAK",
+}
+
+export enum SongSource {
+  BE = "BE",
+  BN = "BN",
+  KJ = "KJ",
+  PKJ = "PKJ",
+  NKB = "NKB",
 }
 
 export const SERVICE_INFO = {
   [ServiceMode.INDO]: {
-    author: "Buku Nyanyian HKBP",
-    stand: "Berdiri",
-    music: "Musik",
-    songDb: "/db/BN.json",
     alkitabDb: "/db/alkitab/indo/",
     patikFormat: "Hukum Taurat\\ ?:?\\ ?(.+)",
     epistelFormat: "Epistel\\ ?:?\\ ?(.+)",
@@ -26,10 +30,6 @@ export const SERVICE_INFO = {
     },
   },
   [ServiceMode.BATAK]: {
-    author: "Buku Ende",
-    stand: "Jongjong",
-    music: "Musik",
-    songDb: "/db/BE.json",
     alkitabDb: "/db/alkitab/batak/",
     patikFormat: "Patik\\ ?:?\\ ?(.+)",
     epistelFormat: "Epistel\\ ?:?\\ ?(.+)",
@@ -45,6 +45,39 @@ export const SERVICE_INFO = {
       jamita: "Khotbah",
       doa: "Tangiang Pelean – Pasupasu",
     },
+  },
+};
+
+export const SONG_INFO = {
+  [SongSource.BE]: {
+    songDb: "/db/BE.json",
+    author: "Buku Ende",
+    music: "Musik",
+    stand: "Jongjong",
+  },
+  [SongSource.BN]: {
+    songDb: "/db/BN.json",
+    author: "Buku Nyanyian HKBP",
+    music: "Musik",
+    stand: "Berdiri",
+  },
+  [SongSource.KJ]: {
+    songDb: "/db/KJ.json",
+    author: "Kidung Jemaat",
+    music: "Musik",
+    stand: "Berdiri",
+  },
+  [SongSource.PKJ]: {
+    songDb: "/db/PKJ.json",
+    author: "Pelengkap Kidung Jemaat",
+    music: "Musik",
+    stand: "Berdiri",
+  },
+  [SongSource.NKB]: {
+    songDb: "/db/NKB.json",
+    author: "Nyanyian Kidung Baru",
+    music: "Musik",
+    stand: "Berdiri",
   },
 };
 

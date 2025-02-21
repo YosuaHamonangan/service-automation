@@ -1,8 +1,8 @@
-import { SERVICE_INFO, ServiceMode } from "@/constants";
+import { SERVICE_INFO, ServiceMode, SONG_INFO, SongSource } from "@/constants";
 import { SongDb } from "@/types";
 
-export async function loadSongDb(mode: ServiceMode): Promise<SongDb> {
-  const res = await fetch(SERVICE_INFO[mode].songDb);
+export async function loadSongDb(source: SongSource): Promise<SongDb> {
+  const res = await fetch(SONG_INFO[source].songDb);
   const result = await res.text();
   return JSON.parse(result);
 }

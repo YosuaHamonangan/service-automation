@@ -1,4 +1,9 @@
-import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
+import {
+  ALKITAB_INFO,
+  SERVICE_INFO,
+  ServiceMode,
+  SongSource,
+} from "@/constants";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import "pdfjs-dist/legacy/build/pdf.worker";
 import { RenderParameters, TextItem } from "pdfjs-dist/types/src/display/api";
@@ -26,6 +31,7 @@ const votumFilter = VOTUM_TEXT.trim().replaceAll(" ", "");
 const wartaFilter = WARTA_TEXT.trim().replaceAll(" ", "");
 
 export interface SongVerseData {
+  source: SongSource;
   songNum: string;
   verses: number[] | "all";
   standVerse?: number;
@@ -178,40 +184,42 @@ function parseServiceData(
       .map<string>(({ text }) => text);
 
     const songs: SongVerseData[] = [];
-    lines
-      .filter((txt) => txt.startsWith(mode))
-      .forEach((text) => {
-        text = text.replace(/ /g, "");
-        const result = text.match(/B[NE]\.No\.([0-9]+):([0-9\–\+du]+)(.+)?/);
+    lines.forEach((text) => {
+      text = text.replace(/ /g, "");
+      const result = text.match(
+        /(BE|BN|KJ|PKJ|NKB)\.No\.([0-9a-zA-Z]+):([0-9\–\+du]+)(.+)?/
+      );
 
-        if (!result) return;
+      if (!result) return;
 
-        const songNum = result[1];
-        const verseText = result[2];
-        let verses: number[] | "all" = [];
-        if (verseText.includes("du")) {
-          verses = "all";
-        } else if (verseText.includes("–")) {
-          const [start, end] = verseText.split("–");
-          for (let i = +start; i <= +end; i++) {
-            verses.push(i);
-          }
-        } else if (verseText.includes("+")) {
-          const list = verseText.split("+");
-          // @ts-ignore
-          list.forEach((txt) => verses.push(+txt));
-        } else {
-          verses.push(+verseText);
+      const source = result[1] as SongSource;
+      const songNum = result[2];
+      const verseText = result[3];
+      let verses: number[] | "all" = [];
+      if (verseText.includes("du")) {
+        verses = "all";
+      } else if (verseText.includes("–")) {
+        const [start, end] = verseText.split("–");
+        for (let i = +start; i <= +end; i++) {
+          verses.push(i);
         }
-        let standVerse = result[3]?.match(
-          new RegExp(SERVICE_INFO[mode].standFormat)
-        )?.[1];
-        songs.push({
-          songNum,
-          verses,
-          standVerse: standVerse ? +standVerse : undefined,
-        });
+      } else if (verseText.includes("+")) {
+        const list = verseText.split("+");
+        // @ts-ignore
+        list.forEach((txt) => verses.push(+txt));
+      } else {
+        verses.push(+verseText);
+      }
+      let standVerse = result[4]?.match(
+        new RegExp(SERVICE_INFO[mode].standFormat)
+      )?.[1];
+      songs.push({
+        source,
+        songNum,
+        verses,
+        standVerse: standVerse ? +standVerse : undefined,
       });
+    });
 
     const patik =
       lines

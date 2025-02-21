@@ -1,4 +1,9 @@
-import { ALKITAB_INFO, SERVICE_INFO, ServiceMode } from "@/constants";
+import {
+  ALKITAB_INFO,
+  SERVICE_INFO,
+  ServiceMode,
+  SongSource,
+} from "@/constants";
 import { downloadBlob } from "@/utils/blob";
 import { createOpenLpFile } from "@/utils/openLp";
 import {
@@ -101,7 +106,19 @@ function SongInput(props: {
   return (
     <div className="flex mb-1">
       <div className="w-1/12  p-2.5">{props.order}</div>
-      <label className="w-1/12 p-2.5">{props.data.mode}</label>
+      <select
+        className="w-1/12 p-2.5 border-0 border-b-2 border-gray-200  focus:outline-none"
+        value={song.source}
+        onChange={(evt) => {
+          handleChange({ source: evt.target.value as SongSource });
+        }}
+      >
+        {Object.entries(SongSource).map(([key, val], i) => (
+          <option key={i} value={val}>
+            {key}
+          </option>
+        ))}
+      </select>
       <input
         className="w-5/12 p-2.5 border rounded-lg block"
         value={song.songNum}

@@ -3,13 +3,16 @@ import { loadAlkitabDb } from "./db";
 import { AlkitabInfo, ParsedPdfData } from "./pdf";
 import PptxGenJS from "pptxgenjs";
 
+const isSquareLayout = false;
+
 export async function createServicePPT(
   pdfData: ParsedPdfData,
   mode: ServiceMode
 ) {
   const serviceData = pdfData.serviceData[mode];
   const pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_4x3";
+  pptx.defineLayout({ name: "HKBP", width: 13.333, height: 7.5 });
+  pptx.layout = isSquareLayout ? "LAYOUT_4x3" : "HKBP";
 
   if (pdfData.serviceTableImage) {
     addImageSlide(pptx, pdfData.serviceTableImage);
@@ -72,19 +75,19 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
   slide.addText(title, {
     x: 1.85,
     y: 0.17,
-    w: 7.36,
+    w: isSquareLayout ? 7.36 : 10.69,
     h: 0.71,
     bold: true,
-    fontSize: 36,
+    fontSize: isSquareLayout ? 36 : 38,
     fontFace: "Arial",
   });
 
   slide.addText(content, {
     x: 0.68,
     y: 1.84,
-    w: 8.64,
+    w: isSquareLayout ? 8.64 : 11.97,
     h: 1.84,
-    fontSize: 36,
+    fontSize: isSquareLayout ? 36 : 38,
     fontFace: "Arial",
     valign: "top",
     autoFit: true,

@@ -369,7 +369,11 @@ function getAlkitabInfo(text: string, mode: ServiceMode): AlkitabInfo {
   if (!parts) return { book: "0", chapter: "1", verses: "1" };
 
   const books = ALKITAB_INFO[mode];
-  const book = closest(parts[1], books);
+  const booksWithoutSpace = books.map((book) => book.replaceAll(" ", ""));
+  const bookWithoutSpace = closest(parts[1], booksWithoutSpace);
+  const index = booksWithoutSpace.indexOf(bookWithoutSpace);
+  const book = books[index];
+
   const chapter = parts[2];
   const verses = [];
   const [start, end] = parts[3].split("–");

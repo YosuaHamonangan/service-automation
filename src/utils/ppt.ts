@@ -74,11 +74,11 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
   });
   slide.addText(title, {
     x: 1.85,
-    y: 0.17,
+    y: 0.5,
     w: isSquareLayout ? 7.36 : 10.69,
     h: 0.71,
     bold: true,
-    fontSize: isSquareLayout ? 36 : 40,
+    fontSize: isSquareLayout ? 36 : 45,
     fontFace: "Arial",
   });
 
@@ -87,7 +87,7 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
     y: 1.84,
     w: isSquareLayout ? 8.64 : 11.97,
     h: 1.84,
-    fontSize: isSquareLayout ? 36 : 40,
+    fontSize: isSquareLayout ? 36 : 50,
     fontFace: "Arial",
     valign: "top",
     autoFit: true,

@@ -37,10 +37,15 @@ export interface SongVerseData {
   standVerse?: number;
 }
 
+export interface ResponsoriaTextData {
+  title: string;
+  text: string[];
+}
+
 export interface AlkitabInfo {
   book: string;
   chapter: string;
-  verses: string;
+  verses: string; // e.g. 1,2,3,5
 }
 
 export interface ServiceData {
@@ -51,6 +56,7 @@ export interface ServiceData {
   epistelInfo: AlkitabInfo;
   jamita: string;
   jamitaInfo: AlkitabInfo;
+  responsoriaText: ResponsoriaTextData[];
 }
 
 export interface ParsedPdfData {
@@ -244,6 +250,7 @@ function parseServiceData(
       epistelInfo: getAlkitabInfo(epistel, mode),
       jamita,
       jamitaInfo: getAlkitabInfo(jamita, mode),
+      responsoriaText: [],
     };
   });
 

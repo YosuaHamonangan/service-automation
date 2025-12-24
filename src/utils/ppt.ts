@@ -30,6 +30,12 @@ export async function createServicePPT(
     addImageSlide(pptx, image);
   });
 
+  pdfData.serviceData[mode].responsoriaText.forEach((responsoria) => {
+    responsoria.text.forEach((text) => {
+      addTextSlide(pptx, responsoria.title, text);
+    });
+  });
+
   const jamita = await getAlkitabtext(serviceData.mode, serviceData.jamitaInfo);
   jamita.forEach((content) => {
     addTextSlide(pptx, serviceData.jamita, content);

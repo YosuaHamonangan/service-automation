@@ -165,7 +165,7 @@ function TextInput(props: {
   data: ServiceData;
   idx: Exclude<
     keyof ServiceData,
-    "songs" | "mode" | "epistelInfo" | "jamitaInfo"
+    "songs" | "mode" | "epistelInfo" | "jamitaInfo" | "responsoriaText"
   >;
   onChange: (data: ServiceData) => void;
 }) {

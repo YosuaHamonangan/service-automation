@@ -59,8 +59,10 @@ export interface ServiceData {
   responsoriaText: ResponsoriaTextData[];
 }
 
+export type ServiceDataList = Partial<Record<ServiceMode, ServiceData>>;
+
 export interface ParsedPdfData {
-  serviceData: Record<ServiceMode, ServiceData>;
+  serviceData: ServiceDataList;
   serviceTableImage: HTMLCanvasElement | undefined;
   wartaImages: HTMLCanvasElement[];
 }
@@ -133,9 +135,7 @@ export async function parsePdfData(pdfFile: File): Promise<ParsedPdfData> {
   };
 }
 
-function parseServiceData(
-  initialSummary: PdfInitialSummary
-): Record<ServiceMode, ServiceData> {
+function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
   const { topBound, botBound } = initialSummary.serviceTableData;
   const pdfData = initialSummary.pdfData.filter((lineItems) => {
     const y = getY(lineItems);
@@ -158,18 +158,27 @@ function parseServiceData(
       if (normText.includes(votumFilter)) votumItem.push(item);
     });
 
-  const result: Record<ServiceMode, ServiceData> = {} as any;
+  const result: ServiceDataList = {};
   Object.values(ServiceMode).forEach((mode) => {
     let leftBound = 0;
     let rightBound = 0;
     switch (mode) {
       case ServiceMode.INDO:
+        if (votumItem.length === 1) {
+          return;
+        }
+
         leftBound = getX(votumItem[0]) - POS_TOLERANCE;
         rightBound = getX(votumItem[1]);
         break;
 
       case ServiceMode.BATAK:
-        leftBound = getX(votumItem[1]) - POS_TOLERANCE;
+        if (votumItem.length === 1) {
+          leftBound = getX(votumItem[0]) - POS_TOLERANCE;
+        } else {
+          leftBound = getX(votumItem[1]) - POS_TOLERANCE;
+        }
+
         rightBound = Infinity;
         break;
 
@@ -193,7 +202,7 @@ function parseServiceData(
     lines.forEach((text) => {
       text = text.replace(/ /g, "");
       const result = text.match(
-        /(BE|BN|KJ|PKJ|NKB)\.No\.([0-9a-zA-Z]+):([0-9\–\+du]+)(.+)?/
+        /(BE|BN|KJ|PKJ|NKB)\.?No\.?([0-9a-zA-Z]+):([0-9\–\+du]+)(.+)?/
       );
 
       if (!result) return;

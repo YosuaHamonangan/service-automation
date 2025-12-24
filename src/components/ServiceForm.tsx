@@ -24,6 +24,10 @@ import {
 } from "react";
 
 async function createServiceFile(pdfData: ParsedPdfData, mode: ServiceMode) {
+  if (!pdfData.serviceData[mode]) {
+    return;
+  }
+
   const [blobOpenLp, blobPpt] = await Promise.all([
     createOpenLpFile(pdfData.serviceData[mode]),
     createServicePPT(pdfData, mode),
@@ -31,7 +35,7 @@ async function createServiceFile(pdfData: ParsedPdfData, mode: ServiceMode) {
 
   const zip = new JSZip();
   zip.file("service.osz", blobOpenLp);
-  zip.file("slide.pptx", blobPpt);
+  if (blobPpt) zip.file("slide.pptx", blobPpt);
 
   const blob = await zip.generateAsync({ type: "blob" });
   downloadBlob(blob, "service.zip");
@@ -40,6 +44,7 @@ async function createServiceFile(pdfData: ParsedPdfData, mode: ServiceMode) {
 function ModeSelector(props: {
   value: ServiceMode;
   onChange: (value: ServiceMode) => void;
+  data: ParsedPdfData;
 }) {
   function onChange(evt: ChangeEvent<HTMLInputElement>) {
     props.onChange(evt.target.value as ServiceMode);
@@ -47,41 +52,31 @@ function ModeSelector(props: {
 
   return (
     <div className="flex">
-      <div className="flex items-center ps-3">
-        <input
-          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-          type="radio"
-          id="mode-indo"
-          name="mode"
-          checked={props.value === ServiceMode.INDO}
-          onChange={onChange}
-          value={ServiceMode.INDO}
-        />
-        <label
-          className="w-full py-3 ms-2 text-gray-900 dark:text-gray-300"
-          htmlFor="mode-indo"
-        >
-          Indonesia
-        </label>
-      </div>
+      {Object.values(ServiceMode).map((mode) => {
+        if (!props.data.serviceData[mode]) {
+          return null;
+        }
 
-      <div className="flex items-center ps-3">
-        <input
-          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
-          type="radio"
-          id="mode-batak"
-          name="mode"
-          checked={props.value === ServiceMode.BATAK}
-          onChange={onChange}
-          value={ServiceMode.BATAK}
-        />
-        <label
-          className="w-full py-3 ms-2 text-gray-900 dark:text-gray-300"
-          htmlFor="mode-batak"
-        >
-          Batak
-        </label>
-      </div>
+        return (
+          <div key={mode} className="flex items-center ps-3">
+            <input
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+              type="radio"
+              id={`mode-${mode}`}
+              name="mode"
+              checked={props.value === mode}
+              onChange={onChange}
+              value={mode}
+            />
+            <label
+              className="w-full py-3 ms-2 text-gray-900 dark:text-gray-300"
+              htmlFor={`mode-${mode}`}
+            >
+              {SERVICE_INFO[mode].label}
+            </label>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -307,7 +302,9 @@ export function ServiceForm(props: {
   onChange: (data: ParsedPdfData) => void;
   onReset: () => void;
 }) {
-  const [mode, setMode] = useState<ServiceMode>(ServiceMode.INDO);
+  const [mode, setMode] = useState<ServiceMode>(
+    Object.keys(props.data.serviceData)[0] as ServiceMode
+  );
 
   const serviceData = props.data.serviceData[mode];
 
@@ -341,106 +338,110 @@ export function ServiceForm(props: {
           await createServiceFile(props.data, mode);
         }}
       >
-        <ModeSelector value={mode} onChange={setMode} />
-        <div>
-          <SongInput
-            order={1}
-            data={serviceData}
-            idx={0}
-            onChange={handleChange}
-          />
-          {/* votum */}
-          <SongInput
-            order={3}
-            data={serviceData}
-            idx={1}
-            onChange={handleChange}
-          />
-          <TextInput
-            order={4}
-            data={serviceData}
-            idx="patik"
-            onChange={handleChange}
-          />
-          <SongInput
-            order={5}
-            data={serviceData}
-            idx={2}
-            onChange={handleChange}
-          />
-          {/* pengakuan dosa*/}
-          <SongInput
-            order={7}
-            data={serviceData}
-            idx={3}
-            onChange={handleChange}
-          />
-          <TextInput
-            order={8}
-            data={serviceData}
-            idx="epistel"
-            onChange={handleChange}
-          />
-          <BibleInput
-            data={serviceData}
-            idx="epistelInfo"
-            onChange={handleChange}
-          />
-          <SongInput
-            order={9}
-            data={serviceData}
-            idx={4}
-            onChange={handleChange}
-          />
-          {/* pengakuan iman*/}
-          {/* koor*/}
-          {/* warta*/}
-          {/* koor*/}
-          <SongInput
-            order={14}
-            data={serviceData}
-            idx={5}
-            onChange={handleChange}
-          />
-          <TextInput
-            order={15}
-            data={serviceData}
-            idx="jamita"
-            onChange={handleChange}
-          />
-          <BibleInput
-            data={serviceData}
-            idx="jamitaInfo"
-            onChange={handleChange}
-          />
-          <SongInput
-            order={17}
-            data={serviceData}
-            idx={6}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="flex justify-end px-10">
-          <button
-            onClick={handleReset}
-            className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-          >
-            Reset
-          </button>
+        <ModeSelector value={mode} onChange={setMode} data={props.data} />
+        {serviceData && (
+          <>
+            <div>
+              <SongInput
+                order={1}
+                data={serviceData}
+                idx={0}
+                onChange={handleChange}
+              />
+              {/* votum */}
+              <SongInput
+                order={3}
+                data={serviceData}
+                idx={1}
+                onChange={handleChange}
+              />
+              <TextInput
+                order={4}
+                data={serviceData}
+                idx="patik"
+                onChange={handleChange}
+              />
+              <SongInput
+                order={5}
+                data={serviceData}
+                idx={2}
+                onChange={handleChange}
+              />
+              {/* pengakuan dosa*/}
+              <SongInput
+                order={7}
+                data={serviceData}
+                idx={3}
+                onChange={handleChange}
+              />
+              <TextInput
+                order={8}
+                data={serviceData}
+                idx="epistel"
+                onChange={handleChange}
+              />
+              <BibleInput
+                data={serviceData}
+                idx="epistelInfo"
+                onChange={handleChange}
+              />
+              <SongInput
+                order={9}
+                data={serviceData}
+                idx={4}
+                onChange={handleChange}
+              />
+              {/* pengakuan iman*/}
+              {/* koor*/}
+              {/* warta*/}
+              {/* koor*/}
+              <SongInput
+                order={14}
+                data={serviceData}
+                idx={5}
+                onChange={handleChange}
+              />
+              <TextInput
+                order={15}
+                data={serviceData}
+                idx="jamita"
+                onChange={handleChange}
+              />
+              <BibleInput
+                data={serviceData}
+                idx="jamitaInfo"
+                onChange={handleChange}
+              />
+              <SongInput
+                order={17}
+                data={serviceData}
+                idx={6}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="flex justify-end px-10">
+              <button
+                onClick={handleReset}
+                className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                Reset
+              </button>
 
-          <input
-            className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-            type="submit"
-            value="Generate"
-          />
-        </div>
+              <input
+                className="text-white m-4 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg w-28 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                type="submit"
+                value="Generate"
+              />
+            </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-10">
-          {images.map((image, i) => {
-            image.className = "h-auto max-w-full rounded-lg";
-            return <CanvasView key={i} canvas={image} />;
-          })}
-        </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-10">
+              {images.map((image, i) => {
+                image.className = "h-auto max-w-full rounded-lg";
+                return <CanvasView key={i} canvas={image} />;
+              })}
+            </div>
+          </>
+        )}
       </form>
     </div>
   );

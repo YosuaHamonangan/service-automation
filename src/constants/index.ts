@@ -13,6 +13,7 @@ export enum SongSource {
 
 export const SERVICE_INFO = {
   [ServiceMode.INDO]: {
+    label: "Indonesia",
     alkitabDb: "/db/alkitab/indo/",
     patikFormat: "Hukum Taurat\\ ?:?\\ ?(.+)",
     epistelFormat: "Epistel\\ ?:?\\ ?(.+)",
@@ -30,6 +31,7 @@ export const SERVICE_INFO = {
     },
   },
   [ServiceMode.BATAK]: {
+    label: "Batak",
     alkitabDb: "/db/alkitab/batak/",
     patikFormat: "Patik\\ ?:?\\ ?(.+)",
     epistelFormat: "Epistel\\ ?:?\\ ?(.+)",

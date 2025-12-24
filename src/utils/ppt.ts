@@ -10,6 +10,10 @@ export async function createServicePPT(
   mode: ServiceMode
 ) {
   const serviceData = pdfData.serviceData[mode];
+  if (!serviceData) {
+    return;
+  }
+
   const pptx = new PptxGenJS();
   pptx.defineLayout({ name: "HKBP", width: 13.333, height: 7.5 });
   pptx.layout = isSquareLayout ? "LAYOUT_4x3" : "HKBP";
@@ -30,7 +34,7 @@ export async function createServicePPT(
     addImageSlide(pptx, image);
   });
 
-  pdfData.serviceData[mode].responsoriaText.forEach((responsoria) => {
+  serviceData.responsoriaText.forEach((responsoria) => {
     responsoria.text.forEach((text) => {
       addTextSlide(pptx, responsoria.title, text);
     });

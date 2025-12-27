@@ -34,7 +34,7 @@ async function createServiceFile(pdfData: ParsedPdfData, mode: ServiceMode) {
   ]);
 
   const zip = new JSZip();
-  zip.file("service.osz", blobOpenLp);
+  if (blobOpenLp) zip.file("service.osz", blobOpenLp);
   if (blobPpt) zip.file("slide.pptx", blobPpt);
 
   const blob = await zip.generateAsync({ type: "blob" });

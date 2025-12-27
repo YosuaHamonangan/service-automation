@@ -27,7 +27,9 @@ export async function createAllOpenLpSongFile(
   return await zip.generateAsync({ type: "blob" });
 }
 
-export async function createOpenLpFile(serviceData: ServiceData) {
+export async function createOpenLpFile(serviceData?: ServiceData) {
+  if (!serviceData) return null;
+
   const serviceJSON = [
     ...createEmptyService(),
     await createSongItem(serviceData, 0),

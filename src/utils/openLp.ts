@@ -3,10 +3,11 @@ import { ServiceData } from "./pdf";
 import { getSongData } from "./song";
 import { SERVICE_INFO, SONG_INFO, SongSource } from "@/constants";
 import { loadSongDb } from "./db";
+import { getAlkitabText } from "./alkitab";
 
 export async function createAllOpenLpSongFile(
   source: SongSource,
-  onUpdate?: (progress: number | null) => void
+  onUpdate?: (progress: number | null) => void,
 ) {
   onUpdate?.(0);
   const db = await loadSongDb(source);
@@ -19,7 +20,7 @@ export async function createAllOpenLpSongFile(
     slideData.xml;
     await zip.file(
       `${source} ${num} (${SONG_INFO[source].author}).xml`,
-      slideData.xml
+      slideData.xml,
     );
     onUpdate?.((i + 1) / db.length);
   }
@@ -40,11 +41,13 @@ export async function createOpenLpFile(serviceData?: ServiceData) {
     createCustomItem(serviceData, "dosa"),
     await createSongItem(serviceData, 3),
     createCustomItem(serviceData, "epistel", "epistel"),
+    await createBibleItem(serviceData, "epistel"),
     await createSongItem(serviceData, 4),
     createCustomItem(serviceData, "iman"),
     createCustomItem(serviceData, "warta"),
     await createSongItem(serviceData, 5),
     createCustomItem(serviceData, "jamita", "jamita"),
+    await createBibleItem(serviceData, "jamita"),
     await createSongItem(serviceData, 6),
     createCustomItem(serviceData, "doa"),
   ];
@@ -107,7 +110,7 @@ async function createSongItem(serviceData: ServiceData, idx: number) {
 
   songJSON.serviceitem.header.xml_version = songData.xml.replace(
     songData.verseOrder.join(" "),
-    verseOrder.join(" ")
+    verseOrder.join(" "),
   );
 
   const slidesData: any[] = [];
@@ -182,7 +185,7 @@ function createEmptySong() {
 function createCustomItem(
   serviceData: ServiceData,
   staticKey: keyof (typeof SERVICE_INFO)["INDO"]["static"],
-  dataKey?: Exclude<keyof ServiceData, "songs">
+  dataKey?: Exclude<keyof ServiceData, "songs">,
 ) {
   const customJSON = createEmptyCustom();
 
@@ -209,7 +212,7 @@ function createEmptyCustom() {
         plugin: "custom",
         theme: null,
         title: "$title",
-        footer: ["$title"],
+        footer: [] as string[],
         type: 1,
         audit: "",
         notes: "",
@@ -217,6 +220,74 @@ function createEmptyCustom() {
         capabilities: [2, 1, 5, 13, 8, 14],
         search: "",
         data: "",
+        xml_version: null,
+        auto_play_slides_once: false,
+        auto_play_slides_loop: false,
+        timed_slide_interval: 0,
+        start_time: 0,
+        end_time: 0,
+        media_length: 0,
+        background_audio: [],
+        theme_overwritten: false,
+        will_auto_start: false,
+        processor: null,
+        metadata: [],
+        sha256_file_hash: null,
+        stored_filename: null,
+      },
+      data: [] as any[],
+    },
+  };
+}
+
+async function createBibleItem(
+  serviceData: ServiceData,
+  type: "epistel" | "jamita",
+) {
+  const bibleJSON = createEmptyBible();
+
+  const title = serviceData[type];
+  bibleJSON.serviceitem.header.title = title;
+  bibleJSON.serviceitem.header.footer = [title];
+  bibleJSON.serviceitem.header.data.bibles.push({
+    version: "Alkitab",
+    copyright: "-",
+    permissions: "",
+  });
+
+  const mode = serviceData.mode;
+  const dataKey = type === "epistel" ? "epistelInfo" : "jamitaInfo";
+  const texts = await getAlkitabText(mode, serviceData[dataKey]);
+  texts.forEach((text, i) => {
+    const slideHeader = `<div style="font-size:1.1em;padding-bottom:0.5em">${title}</div>`;
+    bibleJSON.serviceitem.data.push({
+      title: text.slice(0, 30),
+      raw_slide: `${slideHeader}${text}`,
+      verseTag: `${i}`,
+    });
+  });
+
+  return bibleJSON;
+}
+
+function createEmptyBible() {
+  return {
+    serviceitem: {
+      header: {
+        name: "bibles",
+        plugin: "bibles",
+        theme: null,
+        title: "",
+        footer: [] as string[],
+        type: 1,
+        audit: "",
+        notes: "",
+        from_plugin: false,
+        capabilities: [14, 1, 5, 17],
+        search: "",
+        data: {
+          bibles: [] as any[],
+        },
         xml_version: null,
         auto_play_slides_once: false,
         auto_play_slides_loop: false,

@@ -1,7 +1,7 @@
-import { ALKITAB_INFO, ServiceMode } from "@/constants";
-import { loadAlkitabDb } from "./db";
-import { AlkitabInfo, ParsedPdfData } from "./pdf";
+import { ServiceMode } from "@/constants";
+import { ParsedPdfData } from "./pdf";
 import PptxGenJS from "pptxgenjs";
+import { getAlkitabText, } from "./alkitab";
 
 const isSquareLayout = false;
 
@@ -22,7 +22,7 @@ export async function createServicePPT(
     addImageSlide(pptx, pdfData.serviceTableImage);
   }
 
-  const epistel = await getAlkitabtext(
+  const epistel = await getAlkitabText(
     serviceData.mode,
     serviceData.epistelInfo
   );
@@ -40,7 +40,7 @@ export async function createServicePPT(
     });
   });
 
-  const jamita = await getAlkitabtext(serviceData.mode, serviceData.jamitaInfo);
+  const jamita = await getAlkitabText(serviceData.mode, serviceData.jamitaInfo);
   jamita.forEach((content) => {
     addTextSlide(pptx, serviceData.jamita, content);
   });
@@ -121,24 +121,3 @@ function addImageSlide(pptx: PptxGenJS, canvas: HTMLCanvasElement) {
   });
 }
 
-async function getAlkitabtext(mode: ServiceMode, info: AlkitabInfo) {
-  const { book, chapter, verses } = info;
-  const db = await loadAlkitabDb(mode, ALKITAB_INFO[mode].indexOf(book) + 1);
-  const verseList = db[+chapter - 1].map((str) => {
-    const result = str.match(/.+:([0-9]+)([a-z]?) /);
-    const verse = result?.[1] ?? "";
-    const subverse = result?.[2];
-    return { str, verse, subverse };
-  });
-
-  const result: string[] = [];
-  verses.split(",").forEach((v) => {
-    const matchedVerses = verseList.filter(({ verse }) => verse === v);
-    if (!matchedVerses) return;
-
-    matchedVerses.forEach(({ str }) => {
-      result.push(str);
-    });
-  });
-  return result;
-}

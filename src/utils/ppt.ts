@@ -1,13 +1,13 @@
 import { ServiceMode } from "@/constants";
 import { ParsedPdfData } from "./pdf";
 import PptxGenJS from "pptxgenjs";
-import { getAlkitabText, } from "./alkitab";
+import { getAlkitabText } from "./alkitab";
 
 const isSquareLayout = false;
 
 export async function createServicePPT(
   pdfData: ParsedPdfData,
-  mode: ServiceMode
+  mode: ServiceMode,
 ) {
   const serviceData = pdfData.serviceData[mode];
   if (!serviceData) {
@@ -24,7 +24,7 @@ export async function createServicePPT(
 
   const epistel = await getAlkitabText(
     serviceData.mode,
-    serviceData.epistelInfo
+    serviceData.epistelInfo,
   );
   epistel.forEach((content) => {
     addTextSlide(pptx, serviceData.epistel, content);
@@ -97,7 +97,7 @@ function addTextSlide(pptx: PptxGenJS, title: string, content: string) {
     y: 1.84,
     w: isSquareLayout ? 8.64 : 11.97,
     h: 1.84,
-    fontSize: isSquareLayout ? 36 : 50,
+    fontSize: isSquareLayout ? 36 : 55,
     fontFace: "Arial",
     valign: "top",
     autoFit: true,
@@ -120,4 +120,3 @@ function addImageSlide(pptx: PptxGenJS, canvas: HTMLCanvasElement) {
     },
   });
 }
-

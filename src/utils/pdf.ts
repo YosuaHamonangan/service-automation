@@ -202,7 +202,7 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
     lines.forEach((text) => {
       text = text.replace(/ /g, "");
       const result = text.match(
-        /(BE|BN|KJ|PKJ|NKB)\.?No\.?([0-9a-zA-Z]+):([0-9\–\+du]+)(.+)?/
+        /(BE|BN|KJ|PKJ|NKB)\.?No\.?([0-9a-zA-Z]+):([0-9\-\–\+du]+)(.+)?/,
       );
 
       if (!result) return;
@@ -213,8 +213,8 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
       let verses: number[] | "all" = [];
       if (verseText.includes("du")) {
         verses = "all";
-      } else if (verseText.includes("–")) {
-        const [start, end] = verseText.split("–");
+      } else if (verseText.includes("-") || verseText.includes("–")) {
+        const [start, end] = verseText.split(/[\-\–]/);
         for (let i = +start; i <= +end; i++) {
           verses.push(i);
         }
@@ -226,7 +226,7 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
         verses.push(+verseText);
       }
       let standVerse = result[4]?.match(
-        new RegExp(SERVICE_INFO[mode].standFormat)
+        new RegExp(SERVICE_INFO[mode].standFormat),
       )?.[1];
       songs.push({
         source,
@@ -267,7 +267,7 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
 }
 
 async function getServiceTableImage(
-  initialSummary: PdfInitialSummary
+  initialSummary: PdfInitialSummary,
 ): Promise<HTMLCanvasElement | undefined> {
   const tablePage = initialSummary.serviceTableData.page;
   if (tablePage) {
@@ -296,7 +296,7 @@ async function getServiceTableImage(
 }
 
 async function getWartaImages(
-  initialSummary: PdfInitialSummary
+  initialSummary: PdfInitialSummary,
 ): Promise<HTMLCanvasElement[]> {
   const { wartaPage } = initialSummary;
   if (!wartaPage) return [];
@@ -392,7 +392,7 @@ function getAlkitabInfo(text: string, mode: ServiceMode): AlkitabInfo {
 
   const chapter = parts[2];
   const verses = [];
-  const [start, end] = parts[3].split("–");
+  const [start, end] = parts[3].split(/[\-\–]/);
   for (let i = +start; i <= +end; i++) {
     verses.push(i);
   }
@@ -423,7 +423,7 @@ async function drawPage(page: PDFPageProxy): Promise<HTMLCanvasElement> {
 
 async function drawCroppedPage(
   pageCanvas: HTMLCanvasElement,
-  crop: CropData
+  crop: CropData,
 ): Promise<HTMLCanvasElement> {
   const canvas = document.createElement("canvas");
   canvas.height = crop.h * IMAGE_PDF_SCALING;
@@ -440,7 +440,7 @@ async function drawCroppedPage(
       0,
       0,
       crop.w * IMAGE_PDF_SCALING,
-      crop.h * IMAGE_PDF_SCALING
+      crop.h * IMAGE_PDF_SCALING,
     );
     // document.body.appendChild(canvas);
   }

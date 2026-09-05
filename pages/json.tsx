@@ -11,7 +11,7 @@ export default function Page() {
       {pdfData && (
         <ServiceForm
           data={pdfData}
-          onChange={setPdfData}
+          onChange={(json) => setPdfData(json)}
           onReset={() => setPdfData(null)}
         />
       )}

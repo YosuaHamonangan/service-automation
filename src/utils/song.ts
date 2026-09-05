@@ -5,7 +5,7 @@ import { loadTemplate } from "./template";
 
 export async function getSongData(songNum: string, source: SongSource) {
   const songData = (await loadSongDb(source)).find(
-    ({ num }) => num === songNum
+    ({ num }) => num.toLowerCase() === songNum.toLowerCase(),
   );
   if (!songData) return;
 

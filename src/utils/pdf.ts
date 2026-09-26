@@ -147,6 +147,10 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
     );
   });
 
+  const hasBatak = pdfData.some((lineItems) => {
+    return lineItems.text.toLowerCase().includes("batak");
+  });
+
   const votumItem: TextItem[] = [];
   pdfData
     .find((data) => {
@@ -159,26 +163,35 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
     });
 
   const result: ServiceDataList = {};
-  Object.values(ServiceMode).forEach((mode) => {
+
+  const modes: ServiceMode[] = [];
+  if (votumItem.length > 1) {
+    modes.push(ServiceMode.INDO);
+    modes.push(ServiceMode.BATAK);
+  } else if (votumItem.length === 1) {
+    if (hasBatak) {
+      modes.push(ServiceMode.BATAK);
+    } else {
+      modes.push(ServiceMode.INDO);
+    }
+  }
+
+  modes.forEach((mode, index) => {
     let leftBound = 0;
     let rightBound = 0;
-    switch (mode) {
-      case ServiceMode.INDO:
-        if (votumItem.length === 1) {
-          return;
-        }
-
+    switch (index) {
+      case 0:
         leftBound = getX(votumItem[0]) - POS_TOLERANCE;
-        rightBound = getX(votumItem[1]);
+
+        if (votumItem.length === 1) {
+          rightBound = Infinity;
+        } else {
+          rightBound = getX(votumItem[1]);
+        }
         break;
 
-      case ServiceMode.BATAK:
-        if (votumItem.length === 1) {
-          leftBound = getX(votumItem[0]) - POS_TOLERANCE;
-        } else {
-          leftBound = getX(votumItem[1]) - POS_TOLERANCE;
-        }
-
+      case 1:
+        leftBound = getX(votumItem[1]) - POS_TOLERANCE;
         rightBound = Infinity;
         break;
 

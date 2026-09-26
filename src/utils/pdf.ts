@@ -196,8 +196,7 @@ function parseServiceData(initialSummary: PdfInitialSummary): ServiceDataList {
         break;
 
       default:
-        const m: never = mode;
-        break;
+        return;
     }
 
     const lines = pdfData
